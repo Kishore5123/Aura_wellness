@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AURA — AI Wellness Companion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- CSS Integration Method 1: External stylesheet (style.css) -->
+  <!-- CSS Integration Method 2: Embedded style block below -->
+  <style>
+    /* Embedded CSS — integration method 2 */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--glass);
+      border: 1px solid var(--lavender);
+      color: var(--text);
+      padding: 0.9rem 1.4rem;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      backdrop-filter: blur(20px);
+      z-index: 9999;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      max-width: 320px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast-icon { margin-right: 0.5rem; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     ONBOARDING / PROFILE CREATION SCREEN
+════════════════════════════════════════════ -->
+<div id="onboarding-screen" class="screen active">
+  <div class="onboarding-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="onboarding-container">
+    <div class="onboarding-brand">
+      <div class="brand-logo">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" stroke="url(#grad1)" stroke-width="2"/>
+          <path d="M12 20 Q16 12 20 20 Q24 28 28 20" stroke="url(#grad1)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="grad1" x1="0" y1="0" x2="40" y2="40">
+              <stop offset="0%" stop-color="#C4B5FD"/>
+              <stop offset="100%" stop-color="#6EE7B7"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <h1 class="brand-name">AURA</h1>
+      <p class="brand-tagline">Your AI-powered mental & physical wellness companion</p>
+    </div>
+
+    <!-- Step indicators -->
+    <div class="step-indicators">
+      <div class="step-dot active" data-step="1"></div>
+      <div class="step-line"></div>
+      <div class="step-dot" data-step="2"></div>
+      <div class="step-line"></div>
+      <div class="step-dot" data-step="3"></div>
+    </div>
+
+    <!-- STEP 1: Personal Info — HTML Forms (Required Skill) -->
+    <div class="onboarding-step active" id="step-1">
+      <h2 class="step-title">Create your profile</h2>
+      <p class="step-sub">Tell AURA about yourself so it can personalize your wellness journey.</p>
+
+      <!-- HTML Form — Required Skill -->
+      <form id="profile-form" class="profile-form" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="first-name">First name</label>
+            <input type="text" id="first-name" name="firstName" placeholder="Alex" required />
+          </div>
+          <div class="form-group">
+            <label for="last-name">Last name</label>
+            <input type="text" id="last-name" name="lastName" placeholder="Johnson" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="alex@university.edu" required />
+          </div>
+          <div class="form-group">
+            <label for="dob">Date of birth</label>
+            <input type="date" id="dob" name="dob" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="height">Height (cm)</label>
+            <input type="number" id="height" name="height" placeholder="170" min="100" max="250" required />
+          </div>
+          <div class="form-group">
+            <label for="weight">Weight (kg)</label>
+            <input type="number" id="weight" name="weight" placeholder="70" min="30" max="300" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Primary wellness goal</label>
+          <div class="goal-chips" id="goal-chips">
+            <button type="button" class="chip" data-value="stress">Reduce stress</button>
+            <button type="button" class="chip" data-value="sleep">Better sleep</button>
+            <button type="button" class="chip" data-value="fitness">Get fit</button>
+            <button type="button" class="chip" data-value="nutrition">Eat better</button>
+            <button type="button" class="chip" data-value="mental">Mental clarity</button>
+            <button type="button" class="chip" data-value="energy">More energy</button>
+          </div>
+          <input type="hidden" id="wellness-goal" name="wellnessGoal" />
+        </div>
+
+        <button type="submit" class="btn-primary" id="step1-next">
+          Continue <span class="btn-arrow">→</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- STEP 2: Device Connection -->
+    <div class="onboarding-step" id="step-2">
+      <h2 class="step-title">Connect your devices</h2>
+      <p class="step-sub">AURA integrates with wearables to track your physical health automatically.</p>
+
+      <div class="devices-grid" id="devices-grid">
+        <!-- Devices rendered by JS -->
+      </div>
+
+      <div class="connected-count">
+        <span id="connected-num">0</span> device(s) connected
+      </div>
+
+      <!-- Drag & Drop zone — Required Skill -->
+      <div class="drop-zone" id="priority-drop-zone">
+        <p class="drop-label">Drag preferred device here to set as primary</p>
+        <div id="primary-device-slot" class="primary-slot">
+          <span class="slot-placeholder">Drop here</span>
+        </div>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn-secondary" id="step2-back">← Back</button>
+        <button class="btn-primary" id="step2-next">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Preferences & Done -->
+    <div class="onboarding-step" id="step-3">
+      <h2 class="step-title">Almost there!</h2>
+      <p class="step-sub">Set your daily check-in preferences.</p>
+
+      <div class="prefs-grid">
+        <div class="pref-card">
+          <div class="pref-icon">🌅</div>
+          <label for="morning-time">Morning check-in</label>
+          <input type="time" id="morning-time" value="07:30" />
+        </div>
+        <div class="pref-card">
+          <div class="pref-icon">🌙</div>
+          <label for="evening-time">Evening reflection</label>
+          <input type="time" id="evening-time" value="21:00" />
+        </div>
+        <div class="pref-card">
+          <div class="pref-icon">💧</div>
+          <label for="water-goal">Daily water goal (L)</label>
+          <input type="number" id="water-goal" value="2.5" step="0.5" min="1" max="5" />
+        </div>
+        <div class="pref-card">
+          <div class="pref-icon">👣</div>
+          <label for="steps-goal">Daily steps goal</label>
+          <input type="number" id="steps-goal" value="8000" step="500" min="1000" max="30000" />
+        </div>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn-secondary" id="step3-back">← Back</button>
+        <button class="btn-primary" id="step3-finish">
+          Launch AURA ✦
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     MAIN APP SCREEN
+════════════════════════════════════════════ -->
+<div id="app-screen" class="screen">
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo-sm">
+        <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" stroke="url(#grad2)" stroke-width="2"/>
+          <path d="M12 20 Q16 12 20 20 Q24 28 28 20" stroke="url(#grad2)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="grad2" x1="0" y1="0" x2="40" y2="40">
+              <stop offset="0%" stop-color="#C4B5FD"/>
+              <stop offset="100%" stop-color="#6EE7B7"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <span class="sidebar-logo-text">AURA</span>
+    </div>
+
+    <ul class="nav-links">
+      <li><button class="nav-btn active" data-tab="dashboard">
+        <span class="nav-icon">◈</span> Dashboard
+      </button></li>
+      <li><button class="nav-btn" data-tab="ai-chat">
+        <span class="nav-icon">◉</span> AI Counselor
+      </button></li>
+      <li><button class="nav-btn" data-tab="health">
+        <span class="nav-icon">◎</span> Health Log
+      </button></li>
+      <li><button class="nav-btn" data-tab="goals">
+        <span class="nav-icon">◇</span> Goals
+      </button></li>
+      <li><button class="nav-btn" data-tab="devices">
+        <span class="nav-icon">◈</span> Devices
+      </button></li>
+    </ul>
+
+    <div class="sidebar-profile" id="sidebar-profile">
+      <div class="profile-avatar" id="profile-avatar">A</div>
+      <div class="profile-info">
+        <span class="profile-name" id="profile-name-sidebar">User</span>
+        <span class="profile-streak" id="profile-streak">🔥 0 day streak</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main-content">
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h2 class="page-title" id="page-title">Dashboard</h2>
+        <span class="page-date" id="page-date"></span>
+      </div>
+      <div class="topbar-right">
+        <div class="mood-quick">
+          <span class="mood-label">Today's mood:</span>
+          <div class="mood-picker" id="mood-picker">
+            <button class="mood-btn" data-mood="1" title="Struggling">😔</button>
+            <button class="mood-btn" data-mood="2" title="Low">😐</button>
+            <button class="mood-btn" data-mood="3" title="Okay">🙂</button>
+            <button class="mood-btn" data-mood="4" title="Good">😊</button>
+            <button class="mood-btn" data-mood="5" title="Great">😄</button>
+          </div>
+        </div>
+        <button class="btn-icon" id="reset-btn" title="Reset profile">⟳</button>
+      </div>
+    </header>
+
+    <!-- TAB: DASHBOARD -->
+    <section class="tab-content active" id="tab-dashboard">
+      <div class="dashboard-grid">
+
+        <!-- Wellness Ring Canvas — Media & API Canvas (Required Skill) -->
+        <div class="card card-ring">
+          <h3 class="card-title">Today's Wellness Score</h3>
+          <div class="ring-wrapper">
+            <canvas id="wellness-canvas" width="240" height="240"></canvas>
+            <div class="ring-score">
+              <span id="wellness-score-num">--</span>
+              <span class="ring-score-label">/ 100</span>
+            </div>
+          </div>
+          <p class="ring-message" id="ring-message">Log your data to see your score</p>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card card-stats">
+          <h3 class="card-title">Today at a glance</h3>
+          <div class="stats-list" id="stats-list">
+            <div class="stat-item" id="stat-steps">
+              <div class="stat-icon">👣</div>
+              <div class="stat-info">
+                <span class="stat-val" id="steps-val">0</span>
+                <span class="stat-lbl">Steps</span>
+              </div>
+              <div class="stat-bar"><div class="stat-fill" id="steps-bar" style="width:0%"></div></div>
+            </div>
+            <div class="stat-item" id="stat-water">
+              <div class="stat-icon">💧</div>
+              <div class="stat-info">
+                <span class="stat-val" id="water-val">0L</span>
+                <span class="stat-lbl">Water</span>
+              </div>
+              <div class="stat-bar"><div class="stat-fill blue" id="water-bar" style="width:0%"></div></div>
+            </div>
+            <div class="stat-item" id="stat-sleep">
+              <div class="stat-icon">🌙</div>
+              <div class="stat-info">
+                <span class="stat-val" id="sleep-val">0h</span>
+                <span class="stat-lbl">Sleep</span>
+              </div>
+              <div class="stat-bar"><div class="stat-fill purple" id="sleep-bar" style="width:0%"></div></div>
+            </div>
+            <div class="stat-item" id="stat-mood">
+              <div class="stat-icon">💫</div>
+              <div class="stat-info">
+                <span class="stat-val" id="mood-val">--</span>
+                <span class="stat-lbl">Mood</span>
+              </div>
+              <div class="stat-bar"><div class="stat-fill amber" id="mood-bar" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mood History Chart Canvas -->
+        <div class="card card-chart">
+          <h3 class="card-title">Mood & Energy — Last 7 Days</h3>
+          <canvas id="mood-chart" width="500" height="180"></canvas>
+        </div>
+
+        <!-- AI Quick Message -->
+        <div class="card card-ai-preview">
+          <div class="ai-avatar-sm">✦</div>
+          <div class="ai-preview-content">
+            <p class="ai-preview-msg" id="ai-preview-msg">Loading your personalized insight...</p>
+            <button class="btn-text" id="open-chat-btn">Talk to AURA →</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB: AI COUNSELOR -->
+    <section class="tab-content" id="tab-ai-chat">
+      <div class="chat-layout">
+        <div class="chat-window" id="chat-window">
+          <div class="chat-welcome" id="chat-welcome">
+            <div class="chat-avatar">✦</div>
+            <h3>Hi, I'm AURA</h3>
+            <p>Your personal AI wellness counselor. I'm here to listen, support, and guide you — mentally and physically. How are you feeling today?</p>
+          </div>
+          <div id="chat-messages"></div>
+          <div class="typing-indicator" id="typing-indicator" style="display:none">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="chat-input-bar">
+          <div class="chat-suggestions" id="chat-suggestions">
+            <button class="suggestion-chip" data-msg="I'm feeling stressed about my exams">😰 Exam stress</button>
+            <button class="suggestion-chip" data-msg="I haven't been sleeping well lately">😴 Poor sleep</button>
+            <button class="suggestion-chip" data-msg="Help me plan a healthy daily routine">📋 Daily routine</button>
+            <button class="suggestion-chip" data-msg="I need motivation to exercise">💪 Motivation</button>
+          </div>
+          <div class="chat-input-row">
+            <textarea id="chat-input" placeholder="Share how you're feeling..." rows="1"></textarea>
+            <button class="btn-send" id="send-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: HEALTH LOG -->
+    <section class="tab-content" id="tab-health">
+      <div class="health-layout">
+
+        <div class="health-log-form card">
+          <h3 class="card-title">Log today's health data</h3>
+          <form id="health-form">
+            <div class="health-fields">
+              <div class="health-field">
+                <label for="log-steps">Steps taken</label>
+                <input type="number" id="log-steps" placeholder="e.g. 7500" min="0" max="100000" />
+              </div>
+              <div class="health-field">
+                <label for="log-water">Water intake (L)</label>
+                <input type="number" id="log-water" placeholder="e.g. 2.0" step="0.1" min="0" max="10" />
+              </div>
+              <div class="health-field">
+                <label for="log-sleep">Sleep last night (h)</label>
+                <input type="number" id="log-sleep" placeholder="e.g. 7.5" step="0.5" min="0" max="24" />
+              </div>
+              <div class="health-field">
+                <label for="log-calories">Calories consumed</label>
+                <input type="number" id="log-calories" placeholder="e.g. 2000" min="0" max="10000" />
+              </div>
+              <div class="health-field">
+                <label for="log-exercise">Exercise (min)</label>
+                <input type="number" id="log-exercise" placeholder="e.g. 30" min="0" max="600" />
+              </div>
+              <div class="health-field">
+                <label for="log-energy">Energy level (1–10)</label>
+                <input type="range" id="log-energy" min="1" max="10" value="5" class="range-input" />
+                <span class="range-val" id="energy-display">5</span>
+              </div>
+            </div>
+            <div class="health-field full-width">
+              <label for="log-notes">How are you feeling? (optional note)</label>
+              <textarea id="log-notes" placeholder="Any notes about today..." rows="2"></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Save today's log ✓</button>
+          </form>
+        </div>
+
+        <!-- Health history -->
+        <div class="card health-history">
+          <h3 class="card-title">Health history</h3>
+          <div id="health-history-list" class="history-list">
+            <p class="empty-state">No logs yet. Start tracking above!</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB: GOALS -->
+    <section class="tab-content" id="tab-goals">
+      <div class="goals-layout">
+        <div class="card goals-add">
+          <h3 class="card-title">Add a new goal</h3>
+          <form id="goal-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="goal-title">Goal title</label>
+                <input type="text" id="goal-title" placeholder="e.g. Run 5km without stopping" required />
+              </div>
+              <div class="form-group">
+                <label for="goal-category">Category</label>
+                <select id="goal-category">
+                  <option value="mental">🧠 Mental</option>
+                  <option value="physical">💪 Physical</option>
+                  <option value="nutrition">🥗 Nutrition</option>
+                  <option value="sleep">😴 Sleep</option>
+                  <option value="social">👥 Social</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="goal-deadline">Target date</label>
+                <input type="date" id="goal-deadline" required />
+              </div>
+              <div class="form-group">
+                <label for="goal-progress">Current progress (%)</label>
+                <input type="number" id="goal-progress" value="0" min="0" max="100" />
+              </div>
+            </div>
+            <button type="submit" class="btn-primary">Add goal +</button>
+          </form>
+        </div>
+
+        <!-- Goals list — Drag & Drop reorder -->
+        <div class="card goals-list-card">
+          <h3 class="card-title">Your goals <span class="hint">(drag to reorder)</span></h3>
+          <ul class="goals-list" id="goals-list">
+            <li class="empty-state">No goals yet. Add one above!</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: DEVICES -->
+    <section class="tab-content" id="tab-devices">
+      <div class="devices-layout">
+        <h3 class="section-title">Connected devices</h3>
+        <div class="devices-full-grid" id="devices-full-grid">
+          <!-- Rendered by JS -->
+        </div>
+        <div class="card device-stats-card">
+          <h3 class="card-title">Device sync status</h3>
+          <canvas id="device-chart" width="400" height="160"></canvas>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✓</span>
+  <span id="toast-msg">Saved!</span>
+</div>
+
+<!-- Audio element — Media & API (Required Skill) -->
+<audio id="chime-audio" preload="auto">
+  <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAA..." type="audio/wav" />
+</audio>
+
+<!-- JS Integration Method 3: Inline script attribute handled in JS file -->
+<!-- JS Integration Method 1: External script file -->
+<script src="script.js"></script>
+</body>
+</html>
