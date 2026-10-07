@@ -1,47 +1,26 @@
-/* ═══════════════════════════════════════════
-   AURA — AI Wellness Companion | script.js
-   
-   SKILL MAP (for your assignment document):
-   ──────────────────────────────────────────
-   [R01] HTML Forms               → profile-form, health-form, goal-form submit handlers
-   [R02] Media & API (Canvas)     → drawWellnessRing(), drawMoodChart(), drawDeviceChart()
-   [R03] CSS – 3 integration      → External (style.css), Embedded (<style> in HTML), Inline (JS sets element.style)
-   [R04] DOM Manipulation         → renderDevices(), renderGoals(), renderHistory(), appendMessage()
-   [R05] JS – 3 integration       → External (this file), Embedded (<script> tag in HTML for toast CSS), Inline (onclick via addEventListener)
-   [R06] Variable scope           → var (legacy loop counter), let (block scope), const (constants)
-   [R07] Native JS libraries      → Math.round(), Math.min(), Date(), Date.toLocaleDateString()
-   [R08] Comparison operators     → ===, !==, >=, <=, > throughout
-   [R09] Loops & iterators        → for, forEach, map, filter, reduce
-   [R10] Function types           → standard (drawWellnessRing), anonymous (addEventListener callbacks), variable (const sendMessage = ...)
-   [R11] Dynamic typing           → score starts as string "--", becomes number; healthData fields coerced
-   [R12] Objects (props+methods)  → userProfile object, healthEntry objects, device objects
-   [R13] Callbacks                → setTimeout, addEventListener, Array.forEach callbacks
-   [R14] Drag and Drop            → device cards (onboarding + goals tab reordering)
-   [R15] Local Storage            → saveToStorage(), loadFromStorage() wrapping localStorage
-   [B01] AJAX / Fetch API         → callAuraAI() using fetch() to Anthropic API
-   [B02] JSON                     → JSON.stringify / JSON.parse for storage and API body
-   [B03] Geolocation              → navigator.geolocation.getCurrentPosition()
-   [B04] Clipboard API            → navigator.clipboard.writeText() on chat message copy
-   ════════════════════════════════════════════ */
+/* AURA — AI Wellness Companion | script.js
+   Front-end prototype: onboarding, dashboard, companion chat, health log,
+   goals and devices. All data stays in the browser (localStorage).
+   See README.md for what is real, what is simulated, and the roadmap. */
 
 "use strict";
 
-// ── [R06] Variable scope: const for module-level constants ──
 const STORAGE_KEY_PROFILE  = "aura_profile";
 const STORAGE_KEY_HEALTH   = "aura_health_logs";
 const STORAGE_KEY_GOALS    = "aura_goals";
 const STORAGE_KEY_DEVICES  = "aura_devices";
 const STORAGE_KEY_STREAK   = "aura_streak";
-const API_ENDPOINT         = "https://api.anthropic.com/v1/messages";
+// Live AI replies need a small backend that holds the API key (planned, see
+// README roadmap). An API key must never be placed in front-end code.
+// Leave this empty to run in demo mode with built-in replies.
+const AI_BACKEND_URL       = "";
 
-// ── [R06] let for mutable top-level state ──
 let currentStep   = 1;
 let draggedDevice = null;
 let draggedGoalEl = null;
 let chatHistory   = [];
-let userLocation  = null;  // [B03] Geolocation result stored here
+let userLocation  = null;
 
-// ── [R12] Objects: userProfile with properties ──
 let userProfile = {
   firstName:    "",
   lastName:     "",
@@ -57,7 +36,6 @@ let userProfile = {
   createdAt:    null
 };
 
-// ── [R12] Objects: device catalog ──
 const DEVICE_CATALOG = [
   { id: "whoop",   name: "WHOOP Band",    icon: "⌚", category: "fitness",    connected: false },
   { id: "apple",   name: "Apple Watch",   icon: "🍎", category: "fitness",    connected: false },
@@ -67,23 +45,19 @@ const DEVICE_CATALOG = [
   { id: "withings",name: "Withings Scale",icon: "⚖️", category: "nutrition",  connected: false }
 ];
 
-// ── [R06] var for demonstration (legacy scope) ──
 var primaryDeviceId = null;
 
 
 /* ════════════════════════════════════════════
-   [R15] LOCAL STORAGE — Required Skill
+   LOCAL STORAGE
 ════════════════════════════════════════════ */
 
-// [R10] Standard function declaration
 function saveToStorage(key, data) {
-  // [B02] JSON — Required Bonus
   localStorage.setItem(key, JSON.stringify(data));
 }
 
 function loadFromStorage(key) {
   const raw = localStorage.getItem(key);
-  // [B02] JSON.parse
   return raw ? JSON.parse(raw) : null;
 }
 
@@ -100,11 +74,9 @@ function clearStorage() {
    INITIALISATION
 ════════════════════════════════════════════ */
 
-// [R10] Variable function — assigned to const
 const initApp = () => {
   const saved = loadFromStorage(STORAGE_KEY_PROFILE);
 
-  // [R08] Comparison operators: strict equality
   if (saved !== null) {
     userProfile = saved;
     showAppScreen();
@@ -112,9 +84,8 @@ const initApp = () => {
     showOnboarding();
   }
 
-  // [R07] Native JS: Date
   updateDateDisplay();
-  requestGeolocation(); // [B03]
+  requestGeolocation();
 };
 
 function showOnboarding() {
@@ -134,7 +105,6 @@ function showAppScreen() {
 }
 
 function updateDateDisplay() {
-  // [R07] Native JS: Date object
   const now  = new Date();
   const opts = { weekday: "long", year: "numeric", month: "long", day: "numeric" };
   const el   = document.getElementById("page-date");
@@ -145,7 +115,6 @@ function populateAppWithProfile() {
   const nameEl = document.getElementById("profile-name-sidebar");
   const avatEl = document.getElementById("profile-avatar");
 
-  // [R08] !== comparison
   if (nameEl && userProfile.firstName !== "") {
     nameEl.textContent = userProfile.firstName;
   }
@@ -158,14 +127,13 @@ function populateAppWithProfile() {
 
 
 /* ════════════════════════════════════════════
-   [R01] HTML FORMS — ONBOARDING STEPS
+   HTML FORMS — ONBOARDING STEPS
 ════════════════════════════════════════════ */
 
 // Step 1 — Profile form submit
 document.getElementById("profile-form").addEventListener("submit", function(e) {
   e.preventDefault();
 
-  // [R04] DOM Manipulation: reading form values
   const firstName = document.getElementById("first-name").value.trim();
   const lastName  = document.getElementById("last-name").value.trim();
   const email     = document.getElementById("email").value.trim();
@@ -174,7 +142,6 @@ document.getElementById("profile-form").addEventListener("submit", function(e) {
   const weight    = parseInt(document.getElementById("weight").value, 10);
   const goal      = document.getElementById("wellness-goal").value;
 
-  // [R08] Comparison: check required fields
   if (firstName === "" || lastName === "" || email === "" || dob === "") {
     showToast("Please fill in all required fields", "⚠️");
     return;
@@ -184,7 +151,6 @@ document.getElementById("profile-form").addEventListener("submit", function(e) {
     return;
   }
 
-  // [R12] Object: assign properties
   userProfile.firstName    = firstName;
   userProfile.lastName     = lastName;
   userProfile.email        = email;
@@ -209,12 +175,11 @@ document.getElementById("step3-finish").addEventListener("click", () => {
   userProfile.waterGoal   = parseFloat(document.getElementById("water-goal").value);
   userProfile.stepsGoal   = parseInt(document.getElementById("steps-goal").value, 10);
 
-  // [R07] Date: record creation time
   userProfile.createdAt = new Date().toISOString();
 
   saveToStorage(STORAGE_KEY_PROFILE, userProfile);
 
-  // [R15] Save devices
+  // Save devices
   const devices = loadFromStorage(STORAGE_KEY_DEVICES) || DEVICE_CATALOG;
   saveToStorage(STORAGE_KEY_DEVICES, devices);
 
@@ -227,25 +192,20 @@ document.getElementById("goal-chips").addEventListener("click", function(e) {
   const chip = e.target.closest(".chip");
   if (!chip) return;
 
-  // [R04] DOM Manipulation: toggle class
-  // [R09] forEach loop
   this.querySelectorAll(".chip").forEach(c => c.classList.remove("selected"));
   chip.classList.add("selected");
   document.getElementById("wellness-goal").value = chip.dataset.value;
 });
 
 function goToStep(step) {
-  // [R09] for loop
   for (let i = 1; i <= 3; i++) {
     document.getElementById(`step-${i}`).classList.toggle("active", i === step);
     const dot = document.querySelector(`.step-dot[data-step="${i}"]`);
-    // [R08] comparison operators
     if (dot) {
       dot.classList.toggle("active", i === step);
       dot.classList.toggle("done", i < step);
     }
   }
-  // [R09] querySelectorAll + forEach
   document.querySelectorAll(".step-line").forEach((line, idx) => {
     line.classList.toggle("done", idx < step - 1);
   });
@@ -254,7 +214,7 @@ function goToStep(step) {
 
 
 /* ════════════════════════════════════════════
-   [R14] DRAG AND DROP — Required Skill
+   DRAG AND DROP
 ════════════════════════════════════════════ */
 
 function renderDeviceCards(containerId) {
@@ -264,7 +224,6 @@ function renderDeviceCards(containerId) {
   const savedDevices = loadFromStorage(STORAGE_KEY_DEVICES) || DEVICE_CATALOG;
   container.innerHTML = "";
 
-  // [R09] forEach iterator
   savedDevices.forEach(device => {
     if (containerId === "devices-grid") {
       // Onboarding compact cards
@@ -273,7 +232,6 @@ function renderDeviceCards(containerId) {
       card.draggable = true;
       card.dataset.deviceId = device.id;
 
-      // [R03] CSS Inline — integration method 3 (JS setting inline style)
       card.innerHTML = `
         <span class="device-icon">${device.icon}</span>
         <div class="device-name">${device.name}</div>
@@ -283,7 +241,7 @@ function renderDeviceCards(containerId) {
       // Toggle connection on click
       card.addEventListener("click", () => toggleDevice(device.id, card));
 
-      // [R14] Drag events
+      // Drag events
       card.addEventListener("dragstart", (e) => {
         draggedDevice = device.id;
         card.classList.add("dragging");
@@ -328,7 +286,6 @@ function renderDeviceCards(containerId) {
 function toggleDevice(deviceId, cardEl) {
   const devices = loadFromStorage(STORAGE_KEY_DEVICES) || DEVICE_CATALOG;
 
-  // [R09] map — returns new array
   const updated = devices.map(d => {
     if (d.id === deviceId) {
       return { ...d, connected: !d.connected };
@@ -350,7 +307,6 @@ function toggleDevice(deviceId, cardEl) {
 
 function updateConnectedCount() {
   const devices = loadFromStorage(STORAGE_KEY_DEVICES) || DEVICE_CATALOG;
-  // [R09] filter + length
   const count = devices.filter(d => d.connected).length;
   const el = document.getElementById("connected-num");
   if (el) el.textContent = count;
@@ -381,13 +337,11 @@ function setupDropZone() {
       if (dev) {
         primaryDeviceId = dev.id;
 
-        // [R04] DOM Manipulation: update slot content
         slot.innerHTML = `
           <span style="font-size:1.5rem">${dev.icon}</span>
           <span style="font-size:0.85rem; margin-left:0.5rem; font-weight:600;">${dev.name}</span>
           <span style="font-size:0.7rem; color:var(--mint); margin-left:0.5rem;">✓ Primary</span>
         `;
-        // [R03] Inline CSS via JS
         slot.style.padding = "0.75rem";
         slot.style.justifyContent = "center";
         slot.style.gap = "0.4rem";
@@ -401,16 +355,14 @@ function setupDropZone() {
 
 
 /* ════════════════════════════════════════════
-   [R02] MEDIA & API — CANVAS — Required Skill
+   CANVAS CHARTS
 ════════════════════════════════════════════ */
 
-// [R10] Standard function — Wellness Ring
 function drawWellnessRing(score) {
   const canvas = document.getElementById("wellness-canvas");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
 
-  // [R07] Math library
   const cx    = canvas.width / 2;
   const cy    = canvas.height / 2;
   const r     = 95;
@@ -436,7 +388,6 @@ function drawWellnessRing(score) {
     ctx.stroke();
   }
 
-  // [R08] Comparison: color based on score
   let color1, color2;
   if (score >= 80) {
     color1 = "#6EE7B7"; color2 = "#C4B5FD";
@@ -462,7 +413,6 @@ function drawWellnessRing(score) {
   ctx.shadowBlur = 0;
 }
 
-// [R10] Standard function — Mood chart
 function drawMoodChart() {
   const canvas = document.getElementById("mood-chart");
   if (!canvas) return;
@@ -476,7 +426,6 @@ function drawMoodChart() {
   ctx.clearRect(0, 0, w, h);
 
   // Get last 7 days
-  // [R09] map + slice
   const last7 = logs.slice(-7);
 
   if (last7.length === 0) {
@@ -487,7 +436,6 @@ function drawMoodChart() {
     return;
   }
 
-  // [R07] Math.max / Math.min
   const maxMood  = 5;
   const plotW    = w - pad * 2;
   const plotH    = h - pad * 2;
@@ -510,7 +458,6 @@ function drawMoodChart() {
   moodGrad.addColorStop(1, "#6EE7B7");
 
   ctx.beginPath();
-  // [R09] forEach
   last7.forEach((entry, i) => {
     const x = pad + i * stepX;
     const y = pad + plotH - ((entry.mood || 3) / maxMood) * plotH;
@@ -545,7 +492,6 @@ function drawMoodChart() {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // [R07] Date formatting
     const d   = new Date(entry.date);
     const lbl = d.toLocaleDateString("en-GB", { weekday: "short" });
     ctx.fillStyle = "rgba(148,163,184,0.7)";
@@ -580,11 +526,9 @@ function drawDeviceChart() {
     { value: disconnected, color: "rgba(255,255,255,0.1)", label: "Available" }
   ];
 
-  // [R07] Math.PI
   let startAngle = -Math.PI / 2;
 
   segments.forEach(seg => {
-    // [R08] comparison: > 0
     if (seg.value > 0) {
       const angle = (seg.value / total) * 2 * Math.PI;
       ctx.beginPath();
@@ -629,7 +573,6 @@ function loadDashboardData() {
 
   // Get today's log
   const today  = new Date().toDateString();
-  // [R09] find
   const todayLog = logs.find(l => new Date(l.date).toDateString() === today);
 
   if (todayLog) {
@@ -639,13 +582,11 @@ function loadDashboardData() {
   // Compute score
   const score = computeWellnessScore(todayLog);
 
-  // [R11] Dynamic typing: score is "--" string until computed as number
   const scoreEl = document.getElementById("wellness-score-num");
   if (scoreEl) scoreEl.textContent = score === 0 ? "--" : score;
 
   const msgEl = document.getElementById("ring-message");
   if (msgEl) {
-    // [R08] comparison operators
     if (score === 0) {
       msgEl.textContent = "Log your data to see your score";
     } else if (score >= 80) {
@@ -662,11 +603,9 @@ function loadDashboardData() {
   drawDeviceChart();
 }
 
-// [R10] Standard function
 function computeWellnessScore(log) {
   if (!log) return 0;
 
-  // [R11] Dynamic typing: values may be string or number from form
   let score = 0;
   const steps    = Number(log.steps)    || 0;
   const water    = Number(log.water)    || 0;
@@ -675,7 +614,6 @@ function computeWellnessScore(log) {
   const energy   = Number(log.energy)  || 0;
   const exercise = Number(log.exercise)|| 0;
 
-  // [R08] Comparison operators: >=, <=, >, <
   const stepsGoal = userProfile.stepsGoal || 8000;
   const waterGoal = userProfile.waterGoal || 2.5;
 
@@ -699,7 +637,6 @@ function computeWellnessScore(log) {
   if (exercise >= 30)        score += 10;
   else if (exercise >= 15)   score += 5;
 
-  // [R07] Math.min
   return Math.min(score, 100);
 }
 
@@ -713,11 +650,9 @@ function updateStatDisplay(log) {
   const stepsGoal = userProfile.stepsGoal || 8000;
   const waterGoal = userProfile.waterGoal || 2.5;
 
-  // [R04] DOM Manipulation: updating text and inline styles
   const setVal  = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   const setWidth = (id, pct) => {
     const el = document.getElementById(id);
-    // [R03] CSS Integration Method 3 — inline style via JS
     if (el) el.style.width = Math.min(pct, 100) + "%";
   };
 
@@ -728,7 +663,6 @@ function updateStatDisplay(log) {
   const moodEmojis = ["", "😔", "😐", "🙂", "😊", "😄"];
   setVal("mood-val", moodEmojis[mood] || "--");
 
-  // [R07] Math.round
   setWidth("steps-bar",  Math.round((steps / stepsGoal) * 100));
   setWidth("water-bar",  Math.round((water / waterGoal) * 100));
   setWidth("sleep-bar",  Math.round((sleep / 9) * 100));
@@ -737,15 +671,14 @@ function updateStatDisplay(log) {
 
 
 /* ════════════════════════════════════════════
-   [R01] HEALTH LOG FORM — Required Skill
+   HEALTH LOG FORM
 ════════════════════════════════════════════ */
 
 document.getElementById("health-form").addEventListener("submit", function(e) {
   e.preventDefault();
 
-  // [R11] Dynamic typing: form values as strings, converted to numbers
   const entry = {
-    date:     new Date().toISOString(),          // [R07] Date
+    date:     new Date().toISOString(),
     steps:    document.getElementById("log-steps").value,
     water:    document.getElementById("log-water").value,
     sleep:    document.getElementById("log-sleep").value,
@@ -760,7 +693,6 @@ document.getElementById("health-form").addEventListener("submit", function(e) {
 
   // Remove today's existing entry if any
   const today = new Date().toDateString();
-  // [R09] filter
   const filtered = logs.filter(l => new Date(l.date).toDateString() !== today);
   filtered.push(entry);
 
@@ -780,7 +712,6 @@ document.getElementById("log-energy").addEventListener("input", function() {
   document.getElementById("energy-display").textContent = this.value;
 });
 
-// [R10] Variable function for rendering history
 const renderHealthHistory = () => {
   const container = document.getElementById("health-history-list");
   if (!container) return;
@@ -792,10 +723,8 @@ const renderHealthHistory = () => {
     return;
   }
 
-  // [R09] reverse + map + join
   container.innerHTML = [...logs].reverse().map(log => {
     const d = new Date(log.date);
-    // [R07] Date.toLocaleDateString
     const dateStr = d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
     const metrics = [];
@@ -820,14 +749,12 @@ const renderHealthHistory = () => {
    MOOD PICKER
 ════════════════════════════════════════════ */
 
-// [R06] let — mutable
 let currentMoodValue = 0;
 
 document.getElementById("mood-picker").addEventListener("click", function(e) {
   const btn = e.target.closest(".mood-btn");
   if (!btn) return;
 
-  // [R04] DOM Manipulation: classList
   this.querySelectorAll(".mood-btn").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
   currentMoodValue = parseInt(btn.dataset.mood, 10);
@@ -838,13 +765,12 @@ document.getElementById("mood-picker").addEventListener("click", function(e) {
   if (moodEl) moodEl.textContent = moodEmojis[currentMoodValue];
 
   const moodBar = document.getElementById("mood-bar");
-  // [R03] Inline CSS via JS
   if (moodBar) moodBar.style.width = (currentMoodValue / 5 * 100) + "%";
 });
 
 
 /* ════════════════════════════════════════════
-   [R01] GOALS FORM + DRAG & DROP — Required Skills
+   GOALS FORM + DRAG & DROP
 ════════════════════════════════════════════ */
 
 document.getElementById("goal-form").addEventListener("submit", function(e) {
@@ -860,13 +786,12 @@ document.getElementById("goal-form").addEventListener("submit", function(e) {
     return;
   }
 
-  // [R12] Object: goal entry
   const goal = {
-    id:       Date.now().toString(),  // [R07] Date.now()
+    id:       Date.now().toString(),
     title,
     category,
     deadline,
-    progress: Math.min(Math.max(progress, 0), 100)  // [R07] Math.min/max
+    progress: Math.min(Math.max(progress, 0), 100)
   };
 
   const goals = loadFromStorage(STORAGE_KEY_GOALS) || [];
@@ -877,7 +802,6 @@ document.getElementById("goal-form").addEventListener("submit", function(e) {
   this.reset();
 });
 
-// [R10] Standard function
 function renderGoals() {
   const container = document.getElementById("goals-list");
   if (!container) return;
@@ -891,14 +815,12 @@ function renderGoals() {
 
   container.innerHTML = "";
 
-  // [R09] forEach
   goals.forEach((goal, index) => {
     const li = document.createElement("li");
     li.className = "goal-item";
     li.draggable = true;
     li.dataset.goalId = goal.id;
 
-    // [R08] comparison: check if deadline is soon
     const daysLeft  = Math.ceil((new Date(goal.deadline) - new Date()) / (1000 * 60 * 60 * 24));
     const urgentCls = daysLeft <= 7 ? "urgent" : "";
 
@@ -921,12 +843,11 @@ function renderGoals() {
     `;
 
     // Delete button
-    // [R10] Anonymous function callback — [R13] Callbacks
     li.querySelector(".goal-delete").addEventListener("click", function() {
       deleteGoal(this.dataset.id);
     });
 
-    // [R14] Drag & Drop for goal reordering
+    // Drag & Drop for goal reordering
     li.addEventListener("dragstart", (e) => {
       draggedGoalEl = li;
       e.dataTransfer.effectAllowed = "move";
@@ -955,7 +876,6 @@ function renderGoals() {
 
 function deleteGoal(id) {
   const goals = loadFromStorage(STORAGE_KEY_GOALS) || [];
-  // [R09] filter
   const updated = goals.filter(g => g.id !== id);
   saveToStorage(STORAGE_KEY_GOALS, updated);
   renderGoals();
@@ -975,11 +895,9 @@ function reorderGoals(fromId, toId) {
 
 
 /* ════════════════════════════════════════════
-   [B01] AJAX / FETCH API — Bonus Skill
-   AI COUNSELOR CHAT
+   COMPANION CHAT
 ════════════════════════════════════════════ */
 
-// [R10] Variable function
 const sendMessage = async () => {
   const input = document.getElementById("chat-input");
   const text  = input.value.trim();
@@ -994,7 +912,6 @@ const sendMessage = async () => {
 
   appendMessage("user", text);
 
-  // [R12] Object: push to history
   chatHistory.push({ role: "user", content: text });
 
   showTyping(true);
@@ -1005,7 +922,6 @@ const sendMessage = async () => {
   chatHistory.push({ role: "assistant", content: reply });
 };
 
-// [R10] Anonymous function assigned to variable — [B01] Fetch API
 const callAuraAI = async (userMsg) => {
   // Build health context
   const logs    = loadFromStorage(STORAGE_KEY_HEALTH) || [];
@@ -1017,46 +933,37 @@ const callAuraAI = async (userMsg) => {
     healthCtx = `Today's health data: steps=${todayLog.steps}, water=${todayLog.water}L, sleep=${todayLog.sleep}h, mood=${todayLog.mood}/5, energy=${todayLog.energy}/10.`;
   }
   if (userLocation) {
-    healthCtx += ` User location: ${userLocation.city || "known"}.`;  // [B03]
+    healthCtx += ` User location: ${userLocation.city || "known"}.`;
   }
 
   const systemPrompt = `You are AURA, an empathetic AI wellness companion for students. You provide mental health support, physical wellness guidance, and motivation. You are warm, supportive, and science-backed. Keep responses concise (2-4 sentences). The user's name is ${userProfile.firstName || "there"}. Their wellness goal is: ${userProfile.wellnessGoal || "general wellbeing"}. ${healthCtx} Never diagnose or replace professional medical advice.`;
 
+  // Demo mode: no backend configured, so answer from the built-in replies.
+  if (!AI_BACKEND_URL) return getFallbackResponse(userMsg);
+
   try {
-    // [B01] Fetch API call
-    const response = await fetch(API_ENDPOINT, {
+    const response = await fetch(AI_BACKEND_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // [B02] JSON.stringify
       body: JSON.stringify({
-        model:      "claude-sonnet-4-6",
-        max_tokens: 1000,
-        system:     systemPrompt,
-        messages:   chatHistory.slice(-10)  // [R09] slice
+        system:   systemPrompt,
+        messages: chatHistory.slice(-10)
       })
     });
 
-    if (!response.ok) throw new Error("API error");
+    if (!response.ok) throw new Error("Backend error " + response.status);
 
-    // [B02] JSON / response parsing
     const data = await response.json();
-    const content = data.content
-      .filter(c => c.type === "text")  // [R09] filter
-      .map(c => c.text)                // [R09] map
-      .join("\n");
-    return content || "I'm here for you. Could you tell me more?";
+    return data.reply || "I'm here for you. Could you tell me more?";
   } catch (err) {
-    // Fallback responses when API not available
+    console.warn("AURA backend unavailable, using built-in replies.", err);
     return getFallbackResponse(userMsg);
   }
 };
 
-// [R10] Standard function — offline fallback
 function getFallbackResponse(msg) {
-  // [R11] Dynamic typing: msg is string, compared loosely
   const lower = msg.toLowerCase();
 
-  // [R08] Comparison operators
   if (lower.includes("stress") || lower.includes("anxious")) {
     return `It's completely okay to feel stressed, ${userProfile.firstName || ""}. Try the 4-7-8 breathing technique: inhale for 4 counts, hold for 7, exhale for 8. This activates your parasympathetic nervous system and can reduce anxiety within minutes. 🌿`;
   }
@@ -1079,7 +986,6 @@ function getFallbackResponse(msg) {
   return `I hear you, ${userProfile.firstName || ""}. Your wellbeing matters, and every small step counts. What specific area would you like to focus on today — mental clarity, physical energy, sleep quality, or something else? 🌟`;
 }
 
-// [R10] Standard function — [R04] DOM Manipulation
 function appendMessage(role, text) {
   const container = document.getElementById("chat-messages");
   if (!container) return;
@@ -1094,7 +1000,7 @@ function appendMessage(role, text) {
     <div class="msg-bubble">${escapeHtml(text)}</div>
   `;
 
-  // [B04] Clipboard API — double-click to copy
+  // Clipboard API — double-click to copy
   msg.querySelector(".msg-bubble").addEventListener("dblclick", function() {
     navigator.clipboard.writeText(text).then(() => {
       showToast("Message copied to clipboard", "📋");
@@ -1105,7 +1011,6 @@ function appendMessage(role, text) {
 
   container.appendChild(msg);
 
-  // [R13] Callback: scroll after DOM update
   setTimeout(() => {
     container.parentElement.scrollTop = container.parentElement.scrollHeight;
   }, 50);
@@ -1122,10 +1027,8 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// [R10] Anonymous callback on send button
 document.getElementById("send-btn").addEventListener("click", () => sendMessage());
 
-// [R13] Callback: Enter key to send
 document.getElementById("chat-input").addEventListener("keydown", function(e) {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
@@ -1154,15 +1057,12 @@ document.getElementById("open-chat-btn").addEventListener("click", () => {
 
 
 /* ════════════════════════════════════════════
-   [B03] GEOLOCATION — Bonus Skill
+   GEOLOCATION
 ════════════════════════════════════════════ */
 
-// [R10] Standard function
 function requestGeolocation() {
-  // [R08] Comparison: check API availability
   if (!("geolocation" in navigator)) return;
 
-  // [R13] Callback pattern — async position callback
   navigator.geolocation.getCurrentPosition(
     function onSuccess(position) {
       userLocation = {
@@ -1195,23 +1095,18 @@ function updateStreak() {
   let streak  = 0;
   const today = new Date();
 
-  // [R09] for loop counting backwards
   for (let i = 0; i < 365; i++) {
     const d   = new Date(today);
     d.setDate(d.getDate() - i);
     const ds  = d.toDateString();
-    // [R09] find
     const log = logs.find(l => new Date(l.date).toDateString() === ds);
-    // [R08] === comparison
     if (log) streak++;
     else if (i > 0) break;
   }
 
   const el = document.getElementById("profile-streak");
-  // [R03] Inline CSS via JS for streak color
   if (el) {
     el.textContent = `🔥 ${streak} day streak`;
-    // [R08] comparison: highlight long streaks
     if (streak >= 7) el.style.color = "var(--amber)";
     else if (streak >= 3) el.style.color = "var(--mint)";
     else el.style.color = "";
@@ -1223,9 +1118,8 @@ function setAIWelcomeMessage() {
   if (!el) return;
 
   const name  = userProfile.firstName || "there";
-  const hour  = new Date().getHours();  // [R07] Date
+  const hour  = new Date().getHours();
 
-  // [R08] Comparison operators
   let greeting;
   if (hour < 12)      greeting = "Good morning";
   else if (hour < 17) greeting = "Good afternoon";
@@ -1240,7 +1134,6 @@ function setAIWelcomeMessage() {
     `${greeting}${loc}! Your mental and physical health are connected. Let's check in — how was your sleep last night?`
   ];
 
-  // [R07] Math.floor + Math.random
   el.textContent = messages[Math.floor(Math.random() * messages.length)];
 }
 
@@ -1249,16 +1142,13 @@ function setAIWelcomeMessage() {
    NAVIGATION
 ════════════════════════════════════════════ */
 
-// [R04] DOM Manipulation: tab switching
 document.querySelectorAll(".nav-btn").forEach(btn => {
-  // [R10] Anonymous callback — [R13] Callbacks
   btn.addEventListener("click", function() {
     switchTab(this.dataset.tab);
   });
 });
 
 function switchTab(tabId) {
-  // [R04] DOM Manipulation
   document.querySelectorAll(".nav-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.tab === tabId);
   });
@@ -1266,11 +1156,10 @@ function switchTab(tabId) {
     t.classList.toggle("active", t.id === `tab-${tabId}`);
   });
 
-  const titles = { dashboard: "Dashboard", "ai-chat": "AI Counselor", health: "Health Log", goals: "Goals", devices: "Devices" };
+  const titles = { dashboard: "Dashboard", "ai-chat": "AI Companion", health: "Health Log", goals: "Goals", devices: "Devices" };
   const titleEl = document.getElementById("page-title");
   if (titleEl) titleEl.textContent = titles[tabId] || "";
 
-  // [R13] Callback: redraw canvases when tab becomes visible
   if (tabId === "dashboard") {
     setTimeout(() => { drawMoodChart(); loadDashboardData(); }, 50);
   }
@@ -1298,10 +1187,8 @@ document.getElementById("reset-btn").addEventListener("click", function() {
    TOAST NOTIFICATIONS
 ════════════════════════════════════════════ */
 
-// [R06] let — mutable timer reference
 let toastTimer = null;
 
-// [R10] Standard function — [R13] Callback: setTimeout
 function showToast(message, icon = "✓") {
   const toast   = document.getElementById("toast");
   const msgEl   = document.getElementById("toast-msg");
@@ -1315,7 +1202,6 @@ function showToast(message, icon = "✓") {
   iconEl.textContent = icon;
   toast.classList.add("show");
 
-  // [R13] Callback passed to setTimeout
   toastTimer = setTimeout(() => {
     toast.classList.remove("show");
   }, 3000);
@@ -1323,13 +1209,12 @@ function showToast(message, icon = "✓") {
 
 
 /* ════════════════════════════════════════════
-   AUDIO — [R02] Media & API — Required Skill
+   AUDIO
 ════════════════════════════════════════════ */
 
 // Generate a soft chime using Web Audio API
 function playChime() {
   try {
-    // [R11] Dynamic typing: AudioContext may not exist on older browsers
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
 
@@ -1356,11 +1241,10 @@ function playChime() {
 
 
 /* ════════════════════════════════════════════
-   JS INTEGRATION METHOD 2 — Inline handler
+   INLINE HANDLERS
    (CSS Integration note: see HTML <style> block for embedded CSS)
 ════════════════════════════════════════════ */
 
-// [R05] JS Integration Method 2: setting onclick property directly on element
 // (Method 1 = this external file, Method 3 = addEventListener throughout)
 const resetBtn = document.getElementById("reset-btn");
 if (resetBtn) {
@@ -1375,14 +1259,12 @@ if (resetBtn) {
    BOOT
 ════════════════════════════════════════════ */
 
-// [R13] Callback: DOMContentLoaded event
 document.addEventListener("DOMContentLoaded", () => {
   initApp();
 
   // Play a soft chime when app loads after onboarding
   const saved = loadFromStorage(STORAGE_KEY_PROFILE);
   if (saved) {
-    // [R13] setTimeout callback
     setTimeout(playChime, 500);
   }
 });

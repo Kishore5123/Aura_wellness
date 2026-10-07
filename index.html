@@ -9,10 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 
-  <!-- CSS Integration Method 1: External stylesheet (style.css) -->
-  <!-- CSS Integration Method 2: Embedded style block below -->
   <style>
-    /* Embedded CSS — integration method 2 */
+    /* Toast notification */
     .toast {
       position: fixed;
       bottom: 2rem;
@@ -74,13 +72,12 @@
       <div class="step-dot" data-step="3"></div>
     </div>
 
-    <!-- STEP 1: Personal Info — HTML Forms (Required Skill) -->
+    <!-- STEP 1: Personal Info -->
     <div class="onboarding-step active" id="step-1">
       <h2 class="step-title">Create your profile</h2>
       <p class="step-sub">Tell AURA about yourself so it can personalize your wellness journey.</p>
 
-      <!-- HTML Form — Required Skill -->
-      <form id="profile-form" class="profile-form" novalidate>
+            <form id="profile-form" class="profile-form" novalidate>
         <div class="form-row">
           <div class="form-group">
             <label for="first-name">First name</label>
@@ -146,7 +143,7 @@
         <span id="connected-num">0</span> device(s) connected
       </div>
 
-      <!-- Drag & Drop zone — Required Skill -->
+      <!-- Drag & Drop zone -->
       <div class="drop-zone" id="priority-drop-zone">
         <p class="drop-label">Drag preferred device here to set as primary</p>
         <div id="primary-device-slot" class="primary-slot">
@@ -228,7 +225,7 @@
         <span class="nav-icon">◈</span> Dashboard
       </button></li>
       <li><button class="nav-btn" data-tab="ai-chat">
-        <span class="nav-icon">◉</span> AI Counselor
+        <span class="nav-icon">◉</span> AI Companion
       </button></li>
       <li><button class="nav-btn" data-tab="health">
         <span class="nav-icon">◎</span> Health Log
@@ -239,6 +236,9 @@
       <li><button class="nav-btn" data-tab="devices">
         <span class="nav-icon">◈</span> Devices
       </button></li>
+      <li><a class="nav-btn nav-link" href="body-signal-demo.html">
+        <span class="nav-icon">♡</span> Body Signal Demo
+      </a></li>
     </ul>
 
     <div class="sidebar-profile" id="sidebar-profile">
@@ -278,7 +278,7 @@
     <section class="tab-content active" id="tab-dashboard">
       <div class="dashboard-grid">
 
-        <!-- Wellness Ring Canvas — Media & API Canvas (Required Skill) -->
+        <!-- Wellness Ring Canvas -->
         <div class="card card-ring">
           <h3 class="card-title">Today's Wellness Score</h3>
           <div class="ring-wrapper">
@@ -348,14 +348,15 @@
       </div>
     </section>
 
-    <!-- TAB: AI COUNSELOR -->
+    <!-- TAB: AI COMPANION -->
     <section class="tab-content" id="tab-ai-chat">
       <div class="chat-layout">
         <div class="chat-window" id="chat-window">
           <div class="chat-welcome" id="chat-welcome">
             <div class="chat-avatar">✦</div>
             <h3>Hi, I'm AURA</h3>
-            <p>Your personal AI wellness counselor. I'm here to listen, support, and guide you — mentally and physically. How are you feeling today?</p>
+            <p>Your personal AI wellness companion. I'm here to listen, support, and guide you — mentally and physically. How are you feeling today?</p>
+            <p class="demo-note">Demo mode: replies are built in. Live AI replies arrive with the backend.</p>
           </div>
           <div id="chat-messages"></div>
           <div class="typing-indicator" id="typing-indicator" style="display:none">
@@ -485,6 +486,7 @@
     <section class="tab-content" id="tab-devices">
       <div class="devices-layout">
         <h3 class="section-title">Connected devices</h3>
+        <p class="demo-note">Device connections are simulated in this prototype. No data leaves your browser.</p>
         <div class="devices-full-grid" id="devices-full-grid">
           <!-- Rendered by JS -->
         </div>
@@ -504,13 +506,11 @@
   <span id="toast-msg">Saved!</span>
 </div>
 
-<!-- Audio element — Media & API (Required Skill) -->
+<!-- Audio element -->
 <audio id="chime-audio" preload="auto">
   <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAA..." type="audio/wav" />
 </audio>
 
-<!-- JS Integration Method 3: Inline script attribute handled in JS file -->
-<!-- JS Integration Method 1: External script file -->
 <script src="script.js"></script>
 </body>
 </html>
