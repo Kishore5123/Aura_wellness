@@ -79,15 +79,10 @@ HTML, CSS and vanilla JavaScript. Canvas for charts and the live trace. `localSt
 - [ ] **Phase 3** Personal baselines, a stress classifier, and a small pilot
 - [ ] **Phase 4** More wearables and a per-user sleep-to-mood delay model
 
-## Documents
-
-- [`docs/AURA_Project_Report.docx`](docs/AURA_Project_Report.docx)
-- [`docs/AURA_Presentation.pptx`](docs/AURA_Presentation.pptx)
-
 ## Privacy and limits
 
 AURA is a wellness prototype. It does not diagnose or treat, and it is not a substitute for a doctor or therapist. In this version all data stays in your browser. A body signal is not a feeling, so AURA asks what is going on and does not tell the user how they feel.
 
 ## Author
 
-Suddapalli Kishore Tambi, MSc student in Artificial Intelligence, Switzerland. Open to internships and roles in AI and machine learning.
+Suddapalli Kishore Tambi, MSc student in Artificial Intelligence, Switzerland.
